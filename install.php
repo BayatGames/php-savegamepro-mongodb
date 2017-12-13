@@ -15,6 +15,7 @@ $replace = array(
   '<DB_HOST>' => '"' . $_POST["db_host"] . '"',
   '<DB_PASS>' => '"' . $_POST["db_pass"] . '"',
   '<DB_USER>' => '"' . $_POST["db_user"] . '"',
+  '<UPLOAD_FOLDER>' => '"' . addslashes($_POST["upload_folder"]) . '"',
   '<SECRET_KEY>' => '"' . $secret_key . '"'
 );
 
@@ -66,6 +67,13 @@ try {
   echo "Error: Failed to select the saves collection, here is why:\n";
   echo $e->getMessage();
   exit;
+}
+
+if (!file_exists(UPLOAD_FOLDER)) {
+  mkdir(UPLOAD_FOLDER, 0777, true);
+  echo '<div class="alert alert-success" role="alert">Upload Folder Created Successfully</div>';
+} else {
+  echo '<div class="alert alert-warning" role="alert">Upload Folder Already Exists</div>';
 }
 
 echo "<p>Here is your secret key, Write it down to a paper or some sources, because you can't access this page again:</p>";

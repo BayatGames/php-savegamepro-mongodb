@@ -25,6 +25,7 @@ $data_key = isset($_POST['data-key']) ? $_POST['data-key'] : false;
 $data_value = isset($_POST['data-value']) ? $_POST['data-value'] : false;
 $type = isset($_POST['type']) ? $_POST['type'] : 'user';
 $create_account = isset($_POST['create-account']) ? true : false;
+$filename = isset($_POST['file-name']) ? $_POST['file-name'] : $data_key;
 
 if ($secret_key !== SECRET_KEY) {
   http_response_code(400);
@@ -91,6 +92,92 @@ try {
 }
 
 switch ($action) {
+  case 'getfileurl':
+    $filepath = merge_paths(UPLOAD_FOLDER, $username, $filename);
+    if (file_exists($filepath)) {
+      $filepath = str_replace(realpath($_SERVER['DOCUMENT_ROOT']), '', $filepath);
+      $filepath = str_replace('\\', '/', $filepath);
+      $url = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
+      $url .= $_SERVER['HTTP_HOST'] . $filepath;
+      http_response_code(200);
+      echo $url;
+      exit;
+    } else {
+      http_response_code(500);
+      echo "Error: The Requested File does not Exists.";
+      exit;
+    }
+    break;
+  case 'uploadfile':
+    if (isset($_FILES) && isset($_FILES['file'])) {
+      if ($_FILES['file']['error'] == UPLOAD_ERR_OK) {
+        $filepath = merge_paths(UPLOAD_FOLDER, $username, $_FILES['file']['name']);
+        if (!file_exists(dirname($filepath))) {
+          mkdir(dirname($filepath), 0777, true);
+        }
+        if (move_uploaded_file($_FILES['file']['tmp_name'], $filepath)) {
+          http_response_code(200);
+          exit("File Successfully Uploaded");
+        } else {
+          http_response_code(500);
+          echo "Error: Upload Failed, maybe the file is invalid or there is some problem with the file.";
+          exit;
+        }
+      } else {
+        http_response_code(500);
+        echo "Error: Upload Failed, here is why: \n";
+        switch ($_FILES['file']['error']) {
+          case UPLOAD_ERR_INI_SIZE:
+            $message = "The uploaded file exceeds the upload_max_filesize directive in php.ini";
+            break;
+          case UPLOAD_ERR_FORM_SIZE:
+            $message = "The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form";
+            break;
+          case UPLOAD_ERR_PARTIAL:
+            $message = "The uploaded file was only partially uploaded";
+            break;
+          case UPLOAD_ERR_NO_FILE:
+            $message = "No file was uploaded";
+            break;
+          case UPLOAD_ERR_NO_TMP_DIR:
+            $message = "Missing a temporary folder";
+            break;
+          case UPLOAD_ERR_CANT_WRITE:
+            $message = "Failed to write file to disk";
+            break;
+          case UPLOAD_ERR_EXTENSION:
+            $message = "File upload stopped by extension";
+            break;
+          default:
+            $message = "Unknown upload error";
+            break;
+        }
+        echo $message;
+        exit;
+      }
+    } else {
+      http_response_code(500);
+      echo "Error: No File Received, Upload Failed.";
+      exit;
+    }
+    break;
+  case 'downloadfile':
+    $filepath = merge_paths(UPLOAD_FOLDER, $username, $filename);
+    if (file_exists($filepath)) {
+      header('Content-Description: File Transfer');
+      header('Content-Type: application/octet-stream');
+      header("Content-Transfer-Encoding: Binary");
+      header('Expires: 0');
+      header('Cache-Control: must-revalidate');
+      header('Pragma: public');
+      header("Content-Length: " . filesize($filepath));
+      readfile($filepath);
+    } else {
+      http_response_code(500);
+      echo "Error: Requested File does not Exists, Download Failed.";
+      exit;
+    }
+    break;
   case 'save':
     try {
       $saves->updateOne(array(
