@@ -80,17 +80,16 @@ try {
 
 try {
   $user = $users->findOne(array("username" => $username, "password" => $password));
+  if (empty($user) && $create_account) {
+      $date = date("Y-m-d H:i:s");
+      $result = $users->insertOne(array("username" => $username, "password" => $password, "type" => $type, "registered" => $date));
+      $user = array('_id' => $result->getInsertedId(), 'username' => $username, 'password' => $password);
+  }
 } catch (Exception $e) {
-  if ($create_account) {
-    $date = date("Y-m-d H:i:s");
-    $result = $users->insertOne(array("username" => $username, "password" => $password, "type" => $type, "registered" => $date));
-    $user = array('_id' => $result->getInsertedId(), 'username' => $username, 'password' => $password);
-  } else {
     http_response_code(500);
     echo "Error: Failed to find the user, here is why:\n";
     echo $e->getMessage();
     exit;
-  }
 }
 
 switch ($action) {
