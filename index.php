@@ -32,7 +32,9 @@ if ($secret_key !== SECRET_KEY) {
   exit("The Secret Key is invalid.");
 }
 
-if (!empty(DB_USER) && !empty(DB_PASS)) {
+if (!empty(DB_USER) && !empty(DB_PASS) && !empty(DB_NAME)) {
+  $url = "mongodb://" . DB_USER . ":" . DB_PASS . "@" . DB_HOST . "/" . DB_NAME;
+} else if (!empty(DB_USER) && !empty(DB_PASS)) {
   $url = "mongodb://" . DB_USER . ":" . DB_PASS . "@" . DB_HOST;
 } else if (!empty(DB_USER)) {
   $url = "mongodb://" . DB_USER . "@" . DB_HOST;
